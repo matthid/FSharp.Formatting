@@ -6,7 +6,6 @@ open System.Web
 open System.Reflection
 open System.Collections.Generic
 
-open CSharpFormat
 open FSharp.Patterns
 open FSharp.CodeFormat
 open FSharp.Markdown
@@ -320,8 +319,9 @@ module internal Transformations =
               match ctx.OutputKind with
               | OutputKind.Html ->
                   let code = HttpUtility.HtmlEncode code
-                  let code = SyntaxHighlighter.FormatCode(lang, code)
-                  sprintf "<table class=\"pre\"><tr><td><pre lang=\"%s\">%s</pre></td></tr></table>" lang code
+                  //let code = SyntaxHighlighter.FormatCode(lang, code)
+                  let codeHtmlKey = sprintf "language-%s" lang
+                  sprintf "<pre class=\"line-numbers %s\"><code class=\"%s\">%s</code></pre>" codeHtmlKey codeHtmlKey code
               | OutputKind.Latex ->
                   sprintf "\\begin{lstlisting}\n%s\n\\end{lstlisting}" code
             Some(InlineBlock(inlined))
