@@ -101,11 +101,11 @@ let test = 4 + 1.0"""
   doc.Errors |> Seq.length |> should be (greaterThan 0)
 
 // --------------------------------------------------------------------------------------
-// Formatting C# code snippets
+// Formatting of other language code snippets
 // --------------------------------------------------------------------------------------
 
 [<Test>]
-let ``Can format the var keyword in C# code snippet`` () =
+let ``Can format csharp language in a prismjs compatible way`` () =
   let content = """
 hello
 
@@ -113,8 +113,24 @@ hello
     var a = 10 < 10;"""
   let doc = Literate.ParseMarkdownString(content, formatAgent=getFormatAgent())
   let html = Literate.WriteHtml(doc)
-  html |> should contain "<span class=\"k\">var</span>"
+  html |> should contain "<pre class=\"line-numbers"
+  html |> should contain "<code class=\"language-csharp\">"
+  html |> should contain "</code>"
+  html |> should contain "</pre>"
+  
+[<Test>]
+let ``Can format custom languages in a prismjs compatible way`` () =
+  let content = """
+hello
 
+    [lang=someLanguage]
+    var a = 10 < 10;"""
+  let doc = Literate.ParseMarkdownString(content, formatAgent=getFormatAgent())
+  let html = Literate.WriteHtml(doc)
+  html |> should contain "<pre class=\"line-numbers"
+  html |> should contain "<code class=\"language-someLanguage\">"
+  html |> should contain "</code>"
+  html |> should contain "</pre>"
 
 // --------------------------------------------------------------------------------------
 // Test that parsed documents for Markdown and F# #scripts are the same
