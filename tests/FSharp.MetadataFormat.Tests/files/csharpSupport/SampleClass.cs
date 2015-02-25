@@ -7,6 +7,29 @@ using System.Threading.Tasks;
 namespace csharpSupport
 {
     /// <summary>
+    /// Only
+    /// </summary>
+    public class OnlyConstructor
+    {
+        /// <summary>
+        /// My_Constructor
+        /// </summary>
+        public OnlyConstructor() { }
+    }
+
+    /// <summary>
+    /// Only
+    /// </summary>
+    public class OnlyStringProperty
+    {
+        private OnlyStringProperty() { }
+        /// <summary>
+        /// My_String_Property
+        /// </summary>
+        public string StringProperty { get; set; }
+    }
+
+    /// <summary>
     /// My_Static_Sample_Class
     /// </summary>
     public static class SampleStaticClass

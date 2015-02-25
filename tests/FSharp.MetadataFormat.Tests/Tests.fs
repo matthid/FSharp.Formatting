@@ -263,6 +263,13 @@ let ``MetadataFormat test that csharp (publiconly) support works``() =
   files.["csharpsupport-samplestaticclass.html"] |> should not' (contain "My_Private_Static_Property")
   files.["csharpsupport-samplestaticclass.html"] |> should not' (contain "My_Private_Static_Event")
   
+  
+  files.["csharpsupport-onlystringproperty.html"] |> should not' (contain "<strong>Signature:</strong> unit -&gt; unit")
+  files.["csharpsupport-onlystringproperty.html"] |> should contain "<strong>Signature:</strong> string"
+    
+  //files.["csharpsupport-onlyconstructor.html"] |> should not' (contain "<strong>Signature:</strong> unit -&gt; unit")
+  //files.["csharpsupport-onlyconstructor.html"] |> should contain "<strong>Signature:</strong> unit -&gt; OnlyConstructor"
+
   #if INTERACTIVE
   System.Diagnostics.Process.Start(output)
   #endif

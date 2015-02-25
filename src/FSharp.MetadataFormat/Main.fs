@@ -342,8 +342,8 @@ module ValueReader =
     let argInfos, retType = 
         match argInfos, v.IsPropertyGetterMethod || v.HasGetterMethod, v.IsPropertySetterMethod || v.HasSetterMethod with
         | [ AllAndLast(args, last) ], _, true -> [ args ], Some last.Type
-        | _, _, true -> argInfos, None
         | [[]], true, _ -> [], Some retType
+        | _, _, true -> argInfos, None
         | _, _, _ -> argInfos, Some retType
 
     // Extension members can have apparent parents which are not F# types.
