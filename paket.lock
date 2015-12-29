@@ -9,6 +9,7 @@ NUGET
     FSharpVSPowerTools.Core (2.2.0)
       FSharp.Compiler.Service (>= 1.4.2.0)
     ILRepack (2.0.9)
+    IronPython (2.7.5)
     Microsoft.AspNet.Razor (3.2.3)
     NuGet.CommandLine (3.3.0)
     NUnit (2.6.4)

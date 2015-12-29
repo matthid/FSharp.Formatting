@@ -280,21 +280,27 @@ let commandToolStartInfo workingDirectory environmentVars args =
         setVar "FSI" fsiPath)
 
 /// Run the given buildscript with FAKE.exe
-let executeCommandToolWithOutput workingDirectory envArgs args =
+let executeWithOutput configStartInfo =
     let exitCode =
         ExecProcessWithLambdas
-            (commandToolStartInfo workingDirectory envArgs args)
+            configStartInfo
             TimeSpan.MaxValue false ignore ignore
     System.Threading.Thread.Sleep 1000
     exitCode
 
 // Documentation
-let buildDocumentationCommandTool args =
-    trace (sprintf "Building documentation (CommandTool), this could take some time, please wait...")
-    let exit = executeCommandToolWithOutput "." [] args
+let execute traceMsg failMessage configStartInfo =
+    trace traceMsg
+    let exit = executeWithOutput configStartInfo 
     if exit <> 0 then
-        failwith "generating documentation failed"
+        failwith failMessage
     ()
+
+let buildDocumentationCommandTool args =
+  execute
+    "Building documentation (CommandTool), this could take some time, please wait..."
+    "generating documentation failed"
+    (commandToolStartInfo "." [] args)
 
 let createArg argName arguments =
     (arguments : string seq)
@@ -334,22 +340,11 @@ let commandToolLiterateArgument inDir outDir layoutRoots parameters =
 
     sprintf "literate --processDirectory %s %s %s %s" inDirArg outDirArg layoutRootsArgs replacementsArgs
 
-/// Run the given buildscript with FAKE.exe
-let executeFAKEWithOutput workingDirectory script fsiargs envArgs =
-    let exitCode =
-        ExecProcessWithLambdas
-            (fakeStartInfo script workingDirectory "" fsiargs envArgs)
-            TimeSpan.MaxValue false ignore ignore
-    System.Threading.Thread.Sleep 1000
-    exitCode
-
-// Documentation
 let buildDocumentationTarget fsiargs target =
-    trace (sprintf "Building documentation (%s), this could take some time, please wait..." target)
-    let exit = executeFAKEWithOutput "docs/tools" "generate.fsx" fsiargs ["target", target]
-    if exit <> 0 then
-        failwith "generating reference documentation failed"
-    ()
+    execute
+      (sprintf "Building documentation (%s), this could take some time, please wait..." target)
+      "generating reference documentation failed"
+      (fakeStartInfo "generate.fsx" "docs/tools" "" fsiargs ["target", target])
 
 let bootStrapDocumentationFiles () =
     // This is needed to bootstrap ourself (make sure we have the same environment while building as our users) ...
@@ -425,6 +420,7 @@ Target "ReleaseDocs" (fun _ ->
     Branches.push "temp/gh-pages"
 )
 
+
 Target "ReleaseBinaries" (fun _ ->
     Repository.clone "" (gitHome + "/FSharp.Formatting.git") "temp/release"
     Branches.checkoutBranch "temp/release" "release"
@@ -440,6 +436,65 @@ Target "CreateTag" (fun _ ->
 )
 
 Target "Release" DoNothing
+
+Target "MyTest" (fun _ -> 
+    { BaseDirectory = "temp/PythonStdLib"
+      Includes = ["Build.proj"]
+      Excludes = [] }
+    |> MSBuild "" "Build" [ "BuildFlavour","Debug"]
+    |> printf "%A"
+    //execute
+    //  "Build IronPython 3"
+    //  "Failed to build ironpython3"
+    //  (fun info ->
+    //    if isUnix then
+    //      info.FileName <- "make"
+    //      info.Arguments <- ""
+    //    else
+    //      info.FileName <- "cmd.exe"
+    //      info.Arguments <- "/C make.cmd"
+    //    info.WorkingDirectory <- "temp/PythonStdLib"
+    //    let setVar k v =
+    //        info.EnvironmentVariables.[k] <- v
+    //    setVar "MSBuild" msBuildExe
+    //    setVar "GIT" Git.CommandHelper.gitPath
+    //    setVar "FSI" fsiPath)
+)
+Target "SetupIronPython" (fun _ ->
+    CleanDir "temp/IronPython"
+    CopyDir ("temp"@@"IronPython") ("packages"@@"IronPython"@@"lib"@@"Net45") (fun _ -> true)
+    CopyDir ("temp"@@"IronPython") ("packages"@@"IronPython"@@"tools") (fun _ -> true)
+    
+    CleanDir "temp/PythonStdLib"
+    Git.Repository.cloneSingleBranch "temp/PythonStdLib" "https://github.com/IronLanguages/ironpython3" "master" "."
+    
+    //CleanDir "temp/ArgParse"
+    //Git.Repository.clone "temp/ArgParse" "https://github.com/bewest/argparse.git" "."
+)
+
+Target "UpdateCommonMarkTests" (fun _ ->
+    let targetPath = "temp/CommonMark"
+    CleanDir targetPath
+    Git.Repository.clone targetPath "https://github.com/jgm/CommonMark.git" "."
+    CopyRecursive ("temp"@@"PythonStdLib"@@"Src"@@"StdLib"@@"Lib") ("temp"@@"CommonMark"@@"test") true 
+      |> printf "%A"
+    //CopyDir ("temp"@@"PythonStdLib"@@"Lib")  (fun _ -> true)
+    //File.Copy ("temp"@@"ArgParse"@@"argparse.py", "temp"@@"CommonMark"@@"test"@@"argparse.py")
+    execute
+      "Starting IronPython to generate common-mark tests (json source file)"
+      "Failed to generate common-markdown tests"
+      (fun info ->
+        info.FileName <- System.IO.Path.GetFullPath "temp/IronPython/ipy.exe"
+        info.Arguments <- "-v -X:Python30 -X:Debug test/spec_tests.py --dump-tests"
+        info.WorkingDirectory <- targetPath
+        let setVar k v =
+            info.EnvironmentVariables.[k] <- v
+        setVar "PYTHONPATH" (Path.GetFullPath targetPath)
+        setVar "MSBuild" msBuildExe
+        setVar "GIT" Git.CommandHelper.gitPath
+        setVar "FSI" fsiPath)
+    //System.IO.File.Copy(targetPath @@ "")
+)
 
 // --------------------------------------------------------------------------------------
 // Run all targets by default. Invoke 'build <Target>' to override
@@ -460,5 +515,7 @@ Target "All" DoNothing
 //  ==> "ReleaseBinaries"
   ==> "CreateTag"
   ==> "Release"
+
+"SetupIronPython" ==> "UpdateCommonMarkTests"
 
 RunTargetOrDefault "All"
